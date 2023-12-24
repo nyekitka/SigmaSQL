@@ -1,8 +1,8 @@
 package main
 
 import (
+	"SigmaSQL/parsers"
 	"fmt"
-	"parsers"
 )
 
 func main() {
