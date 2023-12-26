@@ -20,22 +20,24 @@ const (
 )
 
 var CompDesignations = map[string]uint8{
-	"=":  equals,
-	"!=": neq,
-	">":  greater,
-	"<":  less,
-	">=": geq,
-	"<=": leq,
+	"=":   equals,
+	"!=":  neq,
+	">":   greater,
+	"<":   less,
+	">=":  geq,
+	"<=":  leq,
+	"or":  or,
+	"and": and,
 }
 
 type Comparison struct {
-	left, right string
-	operator    uint8
+	Left, Right string
+	Operator    uint8
 }
 
 type BooleanTree struct {
-	parent, left, right *BooleanTree
-	action              Comparison
+	Parent, Left, Right *BooleanTree
+	Action              Comparison
 }
 
 /*	Operator priority
@@ -64,7 +66,7 @@ func StringToBools(s string) (*BooleanTree, error) {
 	}
 
 	for compInd := strings.IndexAny(s, "=><!"); compInd != -1; compInd = strings.IndexAny(s, "=><!") {
-		// left operand
+		// Left operand
 		var left_begin, right_end int
 		if s[compInd-1] == '"' {
 			left_begin = strings.LastIndex(s[:compInd-1], "\"")
@@ -81,7 +83,7 @@ func StringToBools(s string) (*BooleanTree, error) {
 		} else {
 			return nil, errors.New("unresolved symbols are used")
 		}
-		// right operand
+		// Right operand
 		var opLen int
 		if s[compInd+1] == '=' {
 			opLen = 2
@@ -103,10 +105,10 @@ func StringToBools(s string) (*BooleanTree, error) {
 		} else {
 			return nil, errors.New("unresolved symbols are used")
 		}
-		comp := Comparison{operator: CompDesignations[s[compInd:compInd+opLen]],
-			left:  s[left_begin:compInd],
-			right: s[compInd+opLen : right_end+1]}
-		res := BooleanTree{action: comp}
+		comp := Comparison{Operator: CompDesignations[s[compInd:compInd+opLen]],
+			Left:  s[left_begin:compInd],
+			Right: s[compInd+opLen : right_end+1]}
+		res := BooleanTree{Action: comp}
 		results = append(results, &res)
 		s = s[:left_begin] + fmt.Sprintf("{%d}", len(results)-1) + s[right_end+1:]
 	}
@@ -122,7 +124,7 @@ func StringToBools(s string) (*BooleanTree, error) {
 		if s[opInd+1] == 'n' {
 			langle := opInd + 5
 			if langle >= len(s) || s[langle] != '{' {
-				return nil, errors.New("not operator isn't applicable")
+				return nil, errors.New("not Operator isn't applicable")
 			}
 			rangle := strings.Index(s[langle+1:], "}")
 			if rangle == -1 {
@@ -132,19 +134,19 @@ func StringToBools(s string) (*BooleanTree, error) {
 			if err != nil {
 				return nil, errors.New("unresolved symbols are used")
 			}
-			res := BooleanTree{left: results[ref], action: Comparison{operator: not}}
-			results[ref].parent = &res
+			res := BooleanTree{Left: results[ref], Action: Comparison{Operator: not}}
+			results[ref].Parent = &res
 			results = append(append(results[:ref], &res), results[ref+1:]...)
 			s = s[:opInd] + s[langle:]
 		} else {
-			// left operand
+			// Left operand
 			rangle := opInd - 1
 			if rangle <= 1 || s[rangle] != '}' {
 				switch s[opInd] {
 				case 'a':
-					return nil, errors.New("and operator isn't applicable")
+					return nil, errors.New("and Operator isn't applicable")
 				default:
-					return nil, errors.New("or operator isn't applicable")
+					return nil, errors.New("or Operator isn't applicable")
 				}
 			}
 			langle := strings.LastIndex(s[:rangle], "{")
@@ -157,7 +159,7 @@ func StringToBools(s string) (*BooleanTree, error) {
 				return nil, errors.New("unresolved symbols are used")
 			}
 
-			//right operand
+			//Right operand
 			if s[opInd+1] == 'a' {
 				langle = opInd + 5
 			} else {
@@ -166,9 +168,9 @@ func StringToBools(s string) (*BooleanTree, error) {
 			if langle >= len(s) || s[langle] != '{' {
 				switch s[opInd] {
 				case 'a':
-					return nil, errors.New("and operator isn't applicable")
+					return nil, errors.New("and Operator isn't applicable")
 				default:
-					return nil, errors.New("or operator isn't applicable")
+					return nil, errors.New("or Operator isn't applicable")
 				}
 			}
 			rangle = strings.Index(s[langle+1:], "}") + langle + 1
@@ -179,9 +181,9 @@ func StringToBools(s string) (*BooleanTree, error) {
 			if rerr != nil {
 				return nil, errors.New("unresolved symbols are used")
 			}
-			res := BooleanTree{left: results[lref], right: results[rref], action: Comparison{operator: uint8(langle - opInd - 3)}}
-			results[lref].parent = &res
-			results[rref].parent = &res
+			res := BooleanTree{Left: results[lref], Right: results[rref], Action: Comparison{Operator: uint8(langle - opInd - 3)}}
+			results[lref].Parent = &res
+			results[rref].Parent = &res
 			results = append(results, &res)
 			s = s[:leftBorder] + fmt.Sprintf("{%d}", len(results)-1) + s[rangle+1:]
 		}
