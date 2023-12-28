@@ -2,12 +2,14 @@ package relalg
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 )
 
 func ParallelIntersection(t1, t2 *Table) (*Table, error) {
 
 	names := make([]string, len(t1.columns))
+	types := make([]reflect.Type, len(t1.columns))
 
 	// checking if columns of the tables are same
 
@@ -19,6 +21,7 @@ func ParallelIntersection(t1, t2 *Table) (*Table, error) {
 				return nil, errors.New("columns of the tables aren't same")
 			}
 			names[i] = t1.columns[i].name
+			types[i] = t1.columns[i].dataType
 		}
 	}
 
@@ -43,7 +46,11 @@ func ParallelIntersection(t1, t2 *Table) (*Table, error) {
 		}
 	}
 	wg.Wait()
-	return trustingCreateTable(names, columns...)
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }
 
 func intersection(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex, wg *sync.WaitGroup, startInd, endInd int) {
@@ -80,7 +87,7 @@ func intersection(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex
 
 func Intersection(t1 *Table, t2 *Table) (*Table, error) {
 	names := make([]string, len(t1.columns))
-
+	types := make([]reflect.Type, len(t1.columns))
 	// checking if columns of the tables are same
 
 	if len(t1.columns) != len(t2.columns) {
@@ -91,6 +98,7 @@ func Intersection(t1 *Table, t2 *Table) (*Table, error) {
 				return nil, errors.New("columns of the tables aren't same")
 			}
 			names[i] = t1.columns[i].name
+			types[i] = t1.columns[i].dataType
 		}
 	}
 
@@ -119,6 +127,9 @@ func Intersection(t1 *Table, t2 *Table) (*Table, error) {
 			}
 		}
 	}
-	res, err := trustingCreateTable(names, columns...)
-	return res, err
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }

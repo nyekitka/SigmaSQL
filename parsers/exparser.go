@@ -34,8 +34,8 @@ type action struct {
 }
 
 type SyntaxTree struct {
-	parent, left, right *SyntaxTree
-	data                action
+	Parent, Left, Right *SyntaxTree
+	Data                action
 }
 
 func In(c rune, _range string) bool {
@@ -95,7 +95,7 @@ func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
 				} else {
 					ref, _ := strconv.Atoi(s[openLangle+1 : openPar-1])
 					res := SyntaxTree{nil, results[ref], nil, action{_type, "", strings.Split(s[openPar+1:closePar], ",")}}
-					results[ref].parent = &res
+					results[ref].Parent = &res
 					results = append(append(results[:ref], &res), results[ref+1:]...)
 					s = s[:openLangle] + fmt.Sprintf("<%d>", len(results)-1) + s[closePar+1:]
 				}
@@ -103,9 +103,9 @@ func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
 				ind := openPar - 2
 				for ; ind >= 0 && unicode.Is(unicode.Latin, rune(s[ind])); ind-- {
 				}
-				variable := SyntaxTree{data: action{empty, s[ind+1 : openPar], []string{}}}
-				res := SyntaxTree{left: &variable, data: action{_type, "", strings.Split(s[openPar+1:closePar], ",")}}
-				variable.parent = &res
+				variable := SyntaxTree{Data: action{empty, s[ind+1 : openPar], []string{}}}
+				res := SyntaxTree{Left: &variable, Data: action{_type, "", strings.Split(s[openPar+1:closePar], ",")}}
+				variable.Parent = &res
 				results = append(results, &res)
 				if ind == -1 {
 					s = fmt.Sprintf("<%d>", len(results)-1) + s[closePar+1:]
@@ -152,7 +152,7 @@ func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
 			rightBorder = endSym + 1
 			for ; rightBorder < len(s)-1 && unicode.Is(unicode.Latin, rune(s[rightBorder+1])); rightBorder++ {
 			}
-			robj := SyntaxTree{data: action{_type: empty, _name: s[endSym+1 : rightBorder+1]}}
+			robj := SyntaxTree{Data: action{_type: empty, _name: s[endSym+1 : rightBorder+1]}}
 			right = &robj
 		} else {
 			return nil, errors.New("used unresolved symbols")
@@ -172,27 +172,27 @@ func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
 			leftBorder = symInd - 1
 			for ; leftBorder > 0 && unicode.Is(unicode.Latin, rune(s[leftBorder-1])); leftBorder-- {
 			}
-			lobj := SyntaxTree{data: action{_type: empty, _name: s[leftBorder:symInd]}}
+			lobj := SyntaxTree{Data: action{_type: empty, _name: s[leftBorder:symInd]}}
 			left = &lobj
 		} else {
 			return nil, errors.New("used unresolved symbols")
 		}
 		var res SyntaxTree
 		if symInd == endSym {
-			res = SyntaxTree{left: left, right: right, data: action{_type: Designations[s[symInd]]}}
+			res = SyntaxTree{Left: left, Right: right, Data: action{_type: Designations[s[symInd]]}}
 		} else {
 			if strings.Contains(s[symInd+1:endSym], ":") {
 				half := strings.Split(s[symInd+1:endSym], ":")
 				leftHalf := strings.Split(half[0], ",")
 				rightHalf := strings.Split(half[1], ",")
 				_attrs := append(leftHalf, rightHalf...)
-				res = SyntaxTree{left: left, right: right, data: action{_type: division, _attrs: _attrs}}
+				res = SyntaxTree{Left: left, Right: right, Data: action{_type: division, _attrs: _attrs}}
 			} else {
-				res = SyntaxTree{left: left, right: right, data: action{_type: join, _attrs: []string{s[symInd : endSym+1]}}}
+				res = SyntaxTree{Left: left, Right: right, Data: action{_type: join, _attrs: []string{s[symInd+1 : endSym]}}}
 			}
 		}
-		left.parent = &res
-		right.parent = &res
+		left.Parent = &res
+		right.Parent = &res
 		results = append(results, &res)
 		if leftBorder == 0 {
 			s = fmt.Sprintf("<%d>", len(results)-1) + s[rightBorder+1:]
@@ -214,6 +214,12 @@ func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
 			return results[ref], nil
 		}
 	} else {
-		return nil, errors.New("query has some extra symbols")
+		for _, c := range s {
+			if !unicode.Is(unicode.Latin, rune(c)) {
+				return nil, errors.New("query has some extra symbols")
+			}
+		}
+		res := SyntaxTree{Data: action{_name: s}}
+		return &res, nil
 	}
 }

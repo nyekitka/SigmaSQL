@@ -2,6 +2,7 @@ package relalg
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 )
 
@@ -10,7 +11,7 @@ var MaxGoroutinesPerProc = 10000
 func ParallelSubtraction(t1, t2 *Table) (*Table, error) {
 
 	names := make([]string, len(t1.columns))
-
+	types := make([]reflect.Type, len(t1.columns))
 	// checking if columns of the tables are same
 
 	if len(t1.columns) != len(t2.columns) {
@@ -21,6 +22,7 @@ func ParallelSubtraction(t1, t2 *Table) (*Table, error) {
 				return nil, errors.New("columns of the tables aren't same")
 			}
 			names[i] = t1.columns[i].name
+			types[i] = t1.columns[i].dataType
 		}
 	}
 
@@ -45,7 +47,11 @@ func ParallelSubtraction(t1, t2 *Table) (*Table, error) {
 		}
 	}
 	wg.Wait()
-	return trustingCreateTable(names, columns...)
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }
 
 func subtraction(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex, wg *sync.WaitGroup, startInd, endInd int) {
@@ -82,7 +88,7 @@ func subtraction(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex,
 
 func Subtraction(t1 *Table, t2 *Table) (*Table, error) {
 	names := make([]string, len(t1.columns))
-
+	types := make([]reflect.Type, len(t1.columns))
 	// checking if columns of the tables are same
 
 	if len(t1.columns) != len(t2.columns) {
@@ -93,6 +99,7 @@ func Subtraction(t1 *Table, t2 *Table) (*Table, error) {
 				return nil, errors.New("columns of the tables aren't same")
 			}
 			names[i] = t1.columns[i].name
+			types[i] = t1.columns[i].dataType
 		}
 	}
 
@@ -121,6 +128,9 @@ func Subtraction(t1 *Table, t2 *Table) (*Table, error) {
 			}
 		}
 	}
-	res, err := trustingCreateTable(names, columns...)
-	return res, err
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }

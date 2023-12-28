@@ -1,7 +1,6 @@
 package main
 
 import (
-	"SigmaSQL/parsers"
 	"SigmaSQL/relalg"
 	"fmt"
 )
@@ -55,9 +54,10 @@ func main() {
 	//t3, err := relalg.Join(t1, t2, tree)
 	//fmt.Print(t3, err)
 	users, _ := relalg.ReadTableFrom("C:\\Users\\Никита\\Desktop\\users.csv")
-	subscriptions, _ := relalg.ReadTableFrom("C:\\Users\\Никита\\Desktop\\subscriptions.csv")
+	//subscriptions, _ := relalg.ReadTableFrom("C:\\Users\\Никита\\Desktop\\subscriptions.csv")
 	//mealplans, _ := relalg.ReadTableFrom("C:\\Users\\Никита\\Desktop\\mealplans.csv")
-	tree, _ := parsers.StringToBools("l.id=r.userid and r.startday>\"2023-06-01\"")
-	t1, _ := relalg.ParallelJoin2(users, subscriptions, tree)
-	fmt.Print(t1)
+	//tree, _ := parsers.StringToBools("l.id=r.userid and r.startday>\"2023-06-01\"")
+	t1, err := relalg.ParallelIntersection(users, users)
+	fmt.Print(t1, err)
+
 }
