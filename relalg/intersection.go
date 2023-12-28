@@ -32,7 +32,7 @@ func ParallelIntersection(t1, t2 *Table) (*Table, error) {
 	if len(t1.columns[0].data) <= MaxGoroutinesPerProc {
 		wg.Add(len(t1.columns[0].data))
 		for i := 0; i < len(t1.columns[0].data); i++ {
-			go subtraction(t1, t2, &columns, &mutex, &wg, i, i+1)
+			go intersection(t1, t2, &columns, &mutex, &wg, i, i+1)
 		}
 	} else {
 		wg.Add(MaxGoroutinesPerProc)
@@ -74,7 +74,7 @@ func intersection(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex
 				break
 			}
 		}
-		if !anyEqual {
+		if anyEqual {
 			mutex.Lock()
 			for col := 0; col < len(t1.columns); col++ {
 				(*whereToSave)[col] = append((*whereToSave)[col], t1.columns[col].data[row1])
