@@ -47,18 +47,15 @@ func In(c rune, _range string) bool {
 	return false
 }
 
-func String_to_tree(s string) (*SyntaxTree, error) {
-	for strings.HasSuffix(s, ")") && strings.HasPrefix(s, "(") {
-		s = s[1 : len(s)-1]
-	}
-	results := make([]*SyntaxTree, 0, 10) // independent expressions that marked in s as "<n>"
+func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
+	//"results" are independent expressions that marked in s as "<n>"
 
 	// we remove the brackets from the expression by recursively building expression trees inside the brackets
 
 	openPar := strings.LastIndex(s, "(")
 	for openPar != -1 {
 		closePar := strings.Index(s[openPar+1:], ")") + openPar + 1
-		res, err := String_to_tree(s[openPar+1 : closePar])
+		res, err := StringToTree(s[openPar+1:closePar], results...)
 		if err != nil {
 			return res, err
 		} else {
@@ -76,9 +73,9 @@ func String_to_tree(s string) (*SyntaxTree, error) {
 		closePar := strings.Index(s[openPar+1:], "]") + openPar + 1
 		var _type uint8
 		if strings.Contains(s[openPar+1:closePar], ",") && !strings.Contains(s[openPar+1:closePar], ":") {
-			_type = limit
-		} else if closePar == len(s)-1 || In(rune(s[closePar+1]), "[+&\\*") {
 			_type = projection
+		} else if closePar == len(s)-1 || In(rune(s[closePar+1]), "[+&\\*") {
+			_type = limit
 		} else {
 			openPar = strings.Index(s[openPar+1:], "[")
 			continue

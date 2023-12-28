@@ -20,6 +20,9 @@ func trustingCreateTable(columnsNames []string, columns ...[]interface{}) (resul
 	result = &Table{}
 	result.columns = make([]column, len(columns), len(columns))
 	for i := 0; i < len(columns); i++ {
+		if len(columns[i]) == 0 {
+			return nil, errors.New("empty columns are given")
+		}
 		var current = columns[i][0]
 		result.columns[i] = column{
 			data:     columns[i],
@@ -33,6 +36,9 @@ func CreateTable(columnsNames []string, columns ...[]interface{}) (result *Table
 	result = &Table{}
 	result.columns = make([]column, len(columns), len(columns))
 	for i := 0; i < len(columns); i += 1 {
+		if len(columns[i]) == 0 {
+			return nil, errors.New("empty columns are given")
+		}
 		var current = columns[i][0]
 		if len(columns[i]) != len(columns[0]) {
 			return nil, errors.New("columns are not the same size")
@@ -62,6 +68,22 @@ func CreateTable(columnsNames []string, columns ...[]interface{}) (result *Table
 				result.columns[j].data = append(result.columns[j].data, columns[j][i])
 			}
 			uniqueRows[row] = true
+		}
+	}
+	return result, nil
+}
+
+func CreateEmptyTable(names []string, types []reflect.Type) (*Table, error) {
+	if len(names) != len(types) {
+		return nil, errors.New("length of names isn't equal to length of types")
+	}
+	result := &Table{}
+	result.columns = make([]column, len(names), len(names))
+	for i := 0; i < len(names); i++ {
+		result.columns[i] = column{
+			data:     make([]interface{}, 0, 10),
+			dataType: types[i],
+			name:     names[i],
 		}
 	}
 	return result, nil
