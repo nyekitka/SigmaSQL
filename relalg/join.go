@@ -305,12 +305,12 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 			}
 		}
 	} else {
-		wg.Add(MaxGoroutinesPerProc)
 		nSplit := int(math.Sqrt(float64(MaxGoroutinesPerProc)))
 		if len(t1.columns[0].data) < nSplit {
-			nSplit = MaxGoroutinesPerProc / len(t1.columns[0].data)
-			resExtr := len(t2.columns[0].data) % nSplit
-			incr := len(t2.columns[0].data) / nSplit
+			nSplit = MaxGoroutinesPerProc / len(t1.columns[0].data) //на сколько нужно сплитануть вторую колонку
+			wg.Add(nSplit * len(t1.columns[0].data))
+			resExtr := len(t2.columns[0].data) % nSplit //сколько останется при сплите второй колонки на nSplit
+			incr := len(t2.columns[0].data) / nSplit    //По сколько колонок нужно сплитовать вторую колонку
 			for i := 0; i < len(t1.columns[0].data); i++ {
 				add := 0
 				for j := 0; j < nSplit*incr; j += incr {
@@ -324,6 +324,7 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 			}
 		} else if len(t2.columns[0].data) < nSplit {
 			nSplit = MaxGoroutinesPerProc / len(t2.columns[0].data)
+			wg.Add(nSplit * len(t2.columns[0].data))
 			resExtr := len(t1.columns[0].data) % nSplit
 			incr := len(t1.columns[0].data) / nSplit
 			for i := 0; i < len(t2.columns[0].data); i++ {
@@ -333,11 +334,12 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 					if newadd < resExtr {
 						newadd++
 					}
-					go f(i, j+add, i+1, j+incr+newadd, &wg, &mutex)
+					go f(j+add, i, j+incr+newadd, i+1, &wg, &mutex)
 					add = newadd
 				}
 			}
 		} else {
+			wg.Add(nSplit * nSplit)
 			incr1 := len(t1.columns[0].data) / nSplit
 			incr2 := len(t2.columns[0].data) / nSplit
 			resExtr1 := len(t1.columns[0].data) % nSplit
