@@ -5,6 +5,9 @@ import (
 )
 
 func Projection(table *Table, fields []string) (*Table, error) {
+	if table == nil || len(table.columns) == 0 || len(fields) == 0 {
+		return nil, nil
+	}
 	columns := make([][]interface{}, 0, len(table.columns))
 	for _, field := range fields {
 		isFound := false

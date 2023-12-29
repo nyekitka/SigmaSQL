@@ -2,6 +2,7 @@ package relalg
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 )
 
@@ -10,11 +11,17 @@ func ParallelProduct(t1, t2 *Table) (*Table, error) {
 		return nil, nil
 	}
 	names := make([]string, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
+	types := make([]reflect.Type, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
 	for i := 0; i < len(t1.columns); i++ {
 		names[i] = "l." + t1.columns[i].name
+		types[i] = t1.columns[i].dataType
 	}
 	for i := 0; i < len(t2.columns); i++ {
 		names[i+len(t1.columns)] = "r." + t2.columns[i].name
+		types[i+len(t1.columns)] = t2.columns[i].dataType
+	}
+	if len(t1.columns[0].data) == 0 || len(t2.columns[0].data) == 0 {
+		return CreateEmptyTable(names, types)
 	}
 	columns := make([][]interface{}, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
 	wg := sync.WaitGroup{}
@@ -62,11 +69,17 @@ func Product(t1, t2 *Table, args ...int) (*Table, error) {
 		return nil, errors.New("start index must be less than end index")
 	}
 	names := make([]string, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
+	types := make([]reflect.Type, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
 	for i := 0; i < len(t1.columns); i++ {
 		names[i] = "l." + t1.columns[i].name
+		types[i] = t1.columns[i].dataType
 	}
 	for i := 0; i < len(t2.columns); i++ {
 		names[i+len(t1.columns)] = "r." + t2.columns[i].name
+		types[i+len(t1.columns)] = t2.columns[i].dataType
+	}
+	if len(t1.columns[0].data) == 0 || len(t2.columns[0].data) == 0 {
+		return CreateEmptyTable(names, types)
 	}
 	columns1 := make([][]interface{}, len(t1.columns), len(t1.columns))
 	for i := 0; i < len(columns1); i++ {

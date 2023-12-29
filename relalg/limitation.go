@@ -4,6 +4,7 @@ import (
 	"SigmaSQL/parsers"
 	"errors"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -178,8 +179,10 @@ func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error)
 		return table, nil
 	}
 	names := make([]string, len(table.columns))
+	types := make([]reflect.Type, len(table.columns))
 	for i := 0; i < len(names); i++ {
 		names[i] = table.columns[i].name
+		types[i] = table.columns[i].dataType
 	}
 	err := checkTree(tree, table)
 	if err != nil {
@@ -222,7 +225,11 @@ func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error)
 		}
 	}
 	wg.Wait()
-	return trustingCreateTable(names, columns...)
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }
 
 func Limitation(table *Table, tree *parsers.BooleanTree) (*Table, error) {
@@ -230,6 +237,7 @@ func Limitation(table *Table, tree *parsers.BooleanTree) (*Table, error) {
 		return table, nil
 	}
 	names := make([]string, len(table.columns))
+	types := make([]reflect.Type, len(table.columns))
 	columns := make([][]interface{}, len(table.columns), len(table.columns))
 	for rowInd := 0; rowInd < len(table.columns[0].data); rowInd++ {
 		doesFit, err := doesFitRow(table, rowInd, tree)
@@ -240,9 +248,14 @@ func Limitation(table *Table, tree *parsers.BooleanTree) (*Table, error) {
 				columns[i] = append(columns[i], table.columns[i].data[rowInd])
 				if names[i] == "" {
 					names[i] = table.columns[i].name
+					types[i] = table.columns[i].dataType
 				}
 			}
 		}
 	}
-	return trustingCreateTable(names, columns...)
+	if columns[0] == nil {
+		return CreateEmptyTable(names, types)
+	} else {
+		return trustingCreateTable(names, columns...)
+	}
 }

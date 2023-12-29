@@ -48,10 +48,15 @@ func In(c rune, _range string) bool {
 }
 
 func StringToTree(s string, results ...*SyntaxTree) (*SyntaxTree, error) {
+	//turn everything into lower case except strings
+	qns := strings.Split(s, "\"")
+	for i := 0; i < len(qns); i += 2 {
+		qns[i] = strings.ToLower(qns[i])
+	}
+	s = strings.Join(qns, "\"")
 	//"results" are independent expressions that marked in s as "<n>"
 
 	// we remove the brackets from the expression by recursively building expression trees inside the brackets
-
 	openPar := strings.LastIndex(s, "(")
 	for openPar != -1 {
 		closePar := strings.Index(s[openPar+1:], ")") + openPar + 1
