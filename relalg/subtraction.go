@@ -6,43 +6,41 @@ import (
 	"sync"
 )
 
-var MaxGoroutinesPerProc = 10000
+func ParallelSubtraction(t1, t2 *Table, MaxGoroutines int) (*Table, error) {
 
-func ParallelSubtraction(t1, t2 *Table) (*Table, error) {
-
-	names := make([]string, len(t1.columns))
-	types := make([]reflect.Type, len(t1.columns))
+	names := make([]string, len(t1.Columns))
+	types := make([]reflect.Type, len(t1.Columns))
 	// checking if columns of the tables are same
 
-	if len(t1.columns) != len(t2.columns) {
+	if len(t1.Columns) != len(t2.Columns) {
 		return nil, errors.New("columns of the tables aren't same")
 	} else {
-		for i := 0; i < len(t1.columns); i++ {
-			if t1.columns[i].name != t2.columns[i].name || t1.columns[i].dataType != t2.columns[i].dataType {
+		for i := 0; i < len(t1.Columns); i++ {
+			if t1.Columns[i].Name != t2.Columns[i].Name || t1.Columns[i].DataType != t2.Columns[i].DataType {
 				return nil, errors.New("columns of the tables aren't same")
 			}
-			names[i] = t1.columns[i].name
-			types[i] = t1.columns[i].dataType
+			names[i] = t1.Columns[i].Name
+			types[i] = t1.Columns[i].DataType
 		}
 	}
 
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	columns := make([][]interface{}, len(t1.columns), len(t1.columns))
+	columns := make([][]interface{}, len(t1.Columns), len(t1.Columns))
 
-	if len(t1.columns[0].data) <= MaxGoroutinesPerProc {
-		wg.Add(len(t1.columns[0].data))
-		for i := 0; i < len(t1.columns[0].data); i++ {
+	if len(t1.Columns[0].Data) <= MaxGoroutines {
+		wg.Add(len(t1.Columns[0].Data))
+		for i := 0; i < len(t1.Columns[0].Data); i++ {
 			go subtraction(t1, t2, &columns, &mutex, &wg, i, i+1)
 		}
 	} else {
-		wg.Add(MaxGoroutinesPerProc)
-		mainCount := len(t1.columns[0].data) / MaxGoroutinesPerProc
-		additCount := len(t1.columns[0].data) % MaxGoroutinesPerProc
+		wg.Add(MaxGoroutines)
+		mainCount := len(t1.Columns[0].Data) / MaxGoroutines
+		additCount := len(t1.Columns[0].Data) % MaxGoroutines
 		for i := 0; i < additCount; i++ {
 			go subtraction(t1, t2, &columns, &mutex, &wg, i*(mainCount+1), (i+1)*(mainCount+1))
 		}
-		for i := 0; i < MaxGoroutinesPerProc-additCount; i++ {
+		for i := 0; i < MaxGoroutines-additCount; i++ {
 			go subtraction(t1, t2, &columns, &mutex, &wg, i*mainCount+additCount*(mainCount+1), (i+1)*mainCount+additCount*(mainCount+1))
 		}
 	}
@@ -62,10 +60,10 @@ func subtraction(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex,
 
 	for row1 := startInd; row1 < endInd; row1++ {
 		anyEqual := false
-		for row2 := 0; row2 < len(t2.columns[0].data); row2++ {
+		for row2 := 0; row2 < len(t2.Columns[0].Data); row2++ {
 			isEqual := true
-			for col := 0; col < len(t1.columns); col++ {
-				if t1.columns[col].data[row1] != t2.columns[col].data[row2] {
+			for col := 0; col < len(t1.Columns); col++ {
+				if t1.Columns[col].Data[row1] != t2.Columns[col].Data[row2] {
 					isEqual = false
 					break
 				}
@@ -77,8 +75,8 @@ func subtraction(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex,
 		}
 		if !anyEqual {
 			mutex.Lock()
-			for col := 0; col < len(t1.columns); col++ {
-				(*whereToSave)[col] = append((*whereToSave)[col], t1.columns[col].data[row1])
+			for col := 0; col < len(t1.Columns); col++ {
+				(*whereToSave)[col] = append((*whereToSave)[col], t1.Columns[col].Data[row1])
 			}
 			mutex.Unlock()
 		}
@@ -87,32 +85,32 @@ func subtraction(t1, t2 *Table, whereToSave *[][]interface{}, mutex *sync.Mutex,
 }
 
 func Subtraction(t1 *Table, t2 *Table) (*Table, error) {
-	names := make([]string, len(t1.columns))
-	types := make([]reflect.Type, len(t1.columns))
+	names := make([]string, len(t1.Columns))
+	types := make([]reflect.Type, len(t1.Columns))
 	// checking if columns of the tables are same
 
-	if len(t1.columns) != len(t2.columns) {
+	if len(t1.Columns) != len(t2.Columns) {
 		return nil, errors.New("columns of the tables aren't same")
 	} else {
-		for i := 0; i < len(t1.columns); i++ {
-			if t1.columns[i].name != t2.columns[i].name || t1.columns[i].dataType != t2.columns[i].dataType {
+		for i := 0; i < len(t1.Columns); i++ {
+			if t1.Columns[i].Name != t2.Columns[i].Name || t1.Columns[i].DataType != t2.Columns[i].DataType {
 				return nil, errors.New("columns of the tables aren't same")
 			}
-			names[i] = t1.columns[i].name
-			types[i] = t1.columns[i].dataType
+			names[i] = t1.Columns[i].Name
+			types[i] = t1.Columns[i].DataType
 		}
 	}
 
 	// looking through the rows of the first table and finding out whether the second table has the same row
 
-	columns := make([][]interface{}, len(t1.columns), len(t1.columns))
+	columns := make([][]interface{}, len(t1.Columns), len(t1.Columns))
 
-	for row1 := 0; row1 < len(t1.columns[0].data); row1++ {
+	for row1 := 0; row1 < len(t1.Columns[0].Data); row1++ {
 		anyEqual := false
-		for row2 := 0; row2 < len(t2.columns[0].data); row2++ {
+		for row2 := 0; row2 < len(t2.Columns[0].Data); row2++ {
 			isEqual := true
 			for col := 0; col < len(columns); col++ {
-				if t1.columns[col].data[row1] != t2.columns[col].data[row2] {
+				if t1.Columns[col].Data[row1] != t2.Columns[col].Data[row2] {
 					isEqual = false
 					break
 				}
@@ -124,7 +122,7 @@ func Subtraction(t1 *Table, t2 *Table) (*Table, error) {
 		}
 		if !anyEqual {
 			for col := 0; col < len(columns); col++ {
-				columns[col] = append(columns[col], t1.columns[col].data[row1])
+				columns[col] = append(columns[col], t1.Columns[col].Data[row1])
 			}
 		}
 	}

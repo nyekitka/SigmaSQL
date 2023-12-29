@@ -22,16 +22,16 @@ func doesFitRow(table *Table, rowInd int, tree *parsers.BooleanTree) (res bool, 
 			leftVal, _ = strconv.Atoi(tree.Action.Left)
 		} else {
 			i := 0
-			for ; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Left {
+			for ; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Left {
 					break
 				}
 			}
-			if i == len(table.columns) {
+			if i == len(table.Columns) {
 				resErr = fmt.Errorf("there is no column named %s", tree.Action.Left)
 				return
 			} else {
-				leftVal = table.columns[i].data[rowInd]
+				leftVal = table.Columns[i].Data[rowInd]
 			}
 		}
 		if tree.Action.Right[0] == '"' {
@@ -43,16 +43,16 @@ func doesFitRow(table *Table, rowInd int, tree *parsers.BooleanTree) (res bool, 
 			}
 		} else {
 			i := 0
-			for ; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Right {
+			for ; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Right {
 					break
 				}
 			}
-			if i == len(table.columns) {
+			if i == len(table.Columns) {
 				resErr = fmt.Errorf("there is no column named %s", tree.Action.Right)
 				return
 			} else {
-				rightVal = table.columns[i].data[rowInd]
+				rightVal = table.Columns[i].Data[rowInd]
 			}
 		}
 		if tree.Action.Operator == parsers.CompDesignations["="] {
@@ -131,10 +131,10 @@ func checkTree(tree *parsers.BooleanTree, table *Table) error {
 			isLeftInt = true
 		} else {
 			isFound := false
-			for i := 0; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Left {
+			for i := 0; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Left {
 					isFound = true
-					isLeftInt = table.columns[i].dataType.Name() == "int"
+					isLeftInt = table.Columns[i].DataType.Name() == "int"
 					break
 				}
 			}
@@ -155,10 +155,10 @@ func checkTree(tree *parsers.BooleanTree, table *Table) error {
 			isRightInt = true
 		} else {
 			isFound := false
-			for i := 0; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Right {
+			for i := 0; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Right {
 					isFound = true
-					isRightInt = table.columns[i].dataType.Name() == "int"
+					isRightInt = table.Columns[i].DataType.Name() == "int"
 					break
 				}
 			}
@@ -174,21 +174,21 @@ func checkTree(tree *parsers.BooleanTree, table *Table) error {
 	}
 }
 
-func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error) {
-	if len(table.columns) == 0 {
+func ParallelLimitation(table *Table, tree *parsers.BooleanTree, MaxGoroutines int) (*Table, error) {
+	if len(table.Columns) == 0 {
 		return table, nil
 	}
-	names := make([]string, len(table.columns))
-	types := make([]reflect.Type, len(table.columns))
+	names := make([]string, len(table.Columns))
+	types := make([]reflect.Type, len(table.Columns))
 	for i := 0; i < len(names); i++ {
-		names[i] = table.columns[i].name
-		types[i] = table.columns[i].dataType
+		names[i] = table.Columns[i].Name
+		types[i] = table.Columns[i].DataType
 	}
 	err := checkTree(tree, table)
 	if err != nil {
 		return nil, err
 	}
-	columns := make([][]interface{}, len(table.columns), len(table.columns))
+	columns := make([][]interface{}, len(table.Columns), len(table.Columns))
 	f := func(startInd, endInd int, mutex *sync.Mutex, wg *sync.WaitGroup) {
 		defer wg.Done()
 		for k := startInd; k < endInd; k++ {
@@ -196,7 +196,7 @@ func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error)
 			if res {
 				mutex.Lock()
 				for i := 0; i < len(columns); i++ {
-					columns[i] = append(columns[i], table.columns[i].data[k])
+					columns[i] = append(columns[i], table.Columns[i].Data[k])
 				}
 				mutex.Unlock()
 			}
@@ -205,16 +205,16 @@ func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error)
 	}
 	mutex := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	if len(table.columns[0].data) <= MaxGoroutinesPerProc {
-		wg.Add(len(table.columns[0].data))
-		for i := 0; i < len(table.columns[0].data); i++ {
+	if len(table.Columns[0].Data) <= MaxGoroutines {
+		wg.Add(len(table.Columns[0].Data))
+		for i := 0; i < len(table.Columns[0].Data); i++ {
 			go f(i, i+1, &mutex, &wg)
 		}
 	} else {
-		wg.Add(MaxGoroutinesPerProc)
-		for i := 0; i < MaxGoroutinesPerProc; i++ {
-			numPerGorout := len(table.columns[0].data) / MaxGoroutinesPerProc
-			extraNum := len(table.columns[0].data) % MaxGoroutinesPerProc
+		wg.Add(MaxGoroutines)
+		for i := 0; i < MaxGoroutines; i++ {
+			numPerGorout := len(table.Columns[0].Data) / MaxGoroutines
+			extraNum := len(table.Columns[0].Data) % MaxGoroutines
 			if i < extraNum {
 				go f(i*(numPerGorout+1), (i+1)*(numPerGorout+1), &mutex, &wg)
 			} else {
@@ -233,22 +233,22 @@ func ParallelLimitation(table *Table, tree *parsers.BooleanTree) (*Table, error)
 }
 
 func Limitation(table *Table, tree *parsers.BooleanTree) (*Table, error) {
-	if len(table.columns) == 0 {
+	if len(table.Columns) == 0 {
 		return table, nil
 	}
-	names := make([]string, len(table.columns))
-	types := make([]reflect.Type, len(table.columns))
-	columns := make([][]interface{}, len(table.columns), len(table.columns))
-	for rowInd := 0; rowInd < len(table.columns[0].data); rowInd++ {
+	names := make([]string, len(table.Columns))
+	types := make([]reflect.Type, len(table.Columns))
+	columns := make([][]interface{}, len(table.Columns), len(table.Columns))
+	for rowInd := 0; rowInd < len(table.Columns[0].Data); rowInd++ {
 		doesFit, err := doesFitRow(table, rowInd, tree)
 		if err != nil {
 			return nil, err
 		} else if doesFit {
 			for i := 0; i < len(columns); i++ {
-				columns[i] = append(columns[i], table.columns[i].data[rowInd])
+				columns[i] = append(columns[i], table.Columns[i].Data[rowInd])
 				if names[i] == "" {
-					names[i] = table.columns[i].name
-					types[i] = table.columns[i].dataType
+					names[i] = table.Columns[i].Name
+					types[i] = table.Columns[i].DataType
 				}
 			}
 		}

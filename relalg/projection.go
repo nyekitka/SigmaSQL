@@ -5,15 +5,15 @@ import (
 )
 
 func Projection(table *Table, fields []string) (*Table, error) {
-	if table == nil || len(table.columns) == 0 || len(fields) == 0 {
+	if table == nil || len(table.Columns) == 0 || len(fields) == 0 {
 		return nil, nil
 	}
-	columns := make([][]interface{}, 0, len(table.columns))
+	columns := make([][]interface{}, 0, len(table.Columns))
 	for _, field := range fields {
 		isFound := false
-		for _, col := range table.columns {
-			if col.name == field {
-				columns = append(columns, col.data)
+		for _, col := range table.Columns {
+			if col.Name == field {
+				columns = append(columns, col.Data)
 				isFound = true
 				break
 			}

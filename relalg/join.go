@@ -31,12 +31,12 @@ func doesFitCombRow(t1, t2 *Table, tree *parsers.BooleanTree, ind1, ind2 int) bo
 				ind = ind2
 			}
 			i := 0
-			for ; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Left[2:] {
+			for ; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Left[2:] {
 					break
 				}
 			}
-			leftVal = table.columns[i].data[ind]
+			leftVal = table.Columns[i].Data[ind]
 		}
 		if tree.Action.Right[0] == '"' {
 			rightVal = tree.Action.Right[1 : len(tree.Action.Right)-1]
@@ -53,12 +53,12 @@ func doesFitCombRow(t1, t2 *Table, tree *parsers.BooleanTree, ind1, ind2 int) bo
 				ind = ind2
 			}
 			i := 0
-			for ; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Right[2:] {
+			for ; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Right[2:] {
 					break
 				}
 			}
-			rightVal = table.columns[i].data[ind]
+			rightVal = table.Columns[i].Data[ind]
 		}
 		if tree.Action.Operator == parsers.CompDesignations["="] {
 			res = leftVal == rightVal
@@ -132,10 +132,10 @@ func checkCombTree(tree *parsers.BooleanTree, t1, t2 *Table) error {
 			} else {
 				return fmt.Errorf("field named %s has no connection to any table", tree.Action.Left)
 			}
-			for i := 0; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Left[2:] {
+			for i := 0; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Left[2:] {
 					isFound = true
-					isLeftInt = table.columns[i].dataType.Name() == "int"
+					isLeftInt = table.Columns[i].DataType.Name() == "int"
 					break
 				}
 			}
@@ -164,10 +164,10 @@ func checkCombTree(tree *parsers.BooleanTree, t1, t2 *Table) error {
 				return fmt.Errorf("field named %s has no connection to any table", tree.Action.Right)
 			}
 			isFound := false
-			for i := 0; i < len(table.columns); i++ {
-				if table.columns[i].name == tree.Action.Right[2:] {
+			for i := 0; i < len(table.Columns); i++ {
+				if table.Columns[i].Name == tree.Action.Right[2:] {
 					isFound = true
-					isRightInt = table.columns[i].dataType.Name() == "int"
+					isRightInt = table.Columns[i].DataType.Name() == "int"
 					break
 				}
 			}
@@ -187,37 +187,37 @@ func checkCombTree(tree *parsers.BooleanTree, t1, t2 *Table) error {
 // 2 - optimized
 
 func Join2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
-	if len(t1.columns) == 0 || len(t2.columns) == 0 {
+	if len(t1.Columns) == 0 || len(t2.Columns) == 0 {
 		return nil, nil
 	}
 	err := checkCombTree(tree, t1, t2)
 	if err != nil {
 		return nil, err
 	}
-	names := make([]string, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
-	for i := 0; i < len(t1.columns); i++ {
-		names[i] = "l." + t1.columns[i].name
+	names := make([]string, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
+	for i := 0; i < len(t1.Columns); i++ {
+		names[i] = "l." + t1.Columns[i].Name
 	}
-	for i := 0; i < len(t2.columns); i++ {
-		names[i+len(t1.columns)] = "r." + t2.columns[i].name
+	for i := 0; i < len(t2.Columns); i++ {
+		names[i+len(t1.Columns)] = "r." + t2.Columns[i].Name
 	}
-	types := make([]reflect.Type, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
-	for i := 0; i < len(t1.columns)+len(t2.columns); i++ {
-		if i < len(t1.columns) {
-			types[i] = t1.columns[i].dataType
+	types := make([]reflect.Type, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
+	for i := 0; i < len(t1.Columns)+len(t2.Columns); i++ {
+		if i < len(t1.Columns) {
+			types[i] = t1.Columns[i].DataType
 		} else {
-			types[i] = t2.columns[i-len(t1.columns)].dataType
+			types[i] = t2.Columns[i-len(t1.Columns)].DataType
 		}
 	}
-	columns := make([][]interface{}, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
-	for row1 := 0; row1 < len(t1.columns[0].data); row1++ {
-		for row2 := 0; row2 < len(t2.columns[0].data); row2++ {
+	columns := make([][]interface{}, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
+	for row1 := 0; row1 < len(t1.Columns[0].Data); row1++ {
+		for row2 := 0; row2 < len(t2.Columns[0].Data); row2++ {
 			if doesFitCombRow(t1, t2, tree, row1, row2) {
-				for i := 0; i < len(t1.columns)+len(t2.columns); i++ {
-					if i < len(t1.columns) {
-						columns[i] = append(columns[i], t1.columns[i].data[row1])
+				for i := 0; i < len(t1.Columns)+len(t2.Columns); i++ {
+					if i < len(t1.Columns) {
+						columns[i] = append(columns[i], t1.Columns[i].Data[row1])
 					} else {
-						columns[i] = append(columns[i], t2.columns[i-len(t1.columns)].data[row2])
+						columns[i] = append(columns[i], t2.Columns[i-len(t1.Columns)].Data[row2])
 					}
 				}
 			}
@@ -241,52 +241,52 @@ func Join1(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 	}
 }
 
-func ParallelJoin1(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
-	crossTable, err := ParallelProduct(t1, t2)
+func ParallelJoin1(t1, t2 *Table, tree *parsers.BooleanTree, MaxGoroutines int) (*Table, error) {
+	crossTable, err := ParallelProduct(t1, t2, MaxGoroutines)
 	if err != nil {
 		return nil, err
 	} else {
 		var res *Table
-		res, err = ParallelLimitation(crossTable, tree)
+		res, err = ParallelLimitation(crossTable, tree, MaxGoroutines)
 		return res, err
 	}
 }
 
-func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
-	if len(t1.columns) == 0 || len(t2.columns) == 0 {
+func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree, MaxGoroutines int) (*Table, error) {
+	if len(t1.Columns) == 0 || len(t2.Columns) == 0 {
 		return nil, nil
 	}
 	err := checkCombTree(tree, t1, t2)
 	if err != nil {
 		return nil, err
 	}
-	names := make([]string, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
-	for i := 0; i < len(t1.columns); i++ {
-		names[i] = "l." + t1.columns[i].name
+	names := make([]string, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
+	for i := 0; i < len(t1.Columns); i++ {
+		names[i] = "l." + t1.Columns[i].Name
 	}
-	for i := 0; i < len(t2.columns); i++ {
-		names[i+len(t1.columns)] = "r." + t2.columns[i].name
+	for i := 0; i < len(t2.Columns); i++ {
+		names[i+len(t1.Columns)] = "r." + t2.Columns[i].Name
 	}
-	types := make([]reflect.Type, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
-	for i := 0; i < len(t1.columns)+len(t2.columns); i++ {
-		if i < len(t1.columns) {
-			types[i] = t1.columns[i].dataType
+	types := make([]reflect.Type, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
+	for i := 0; i < len(t1.Columns)+len(t2.Columns); i++ {
+		if i < len(t1.Columns) {
+			types[i] = t1.Columns[i].DataType
 		} else {
-			types[i] = t2.columns[i-len(t1.columns)].dataType
+			types[i] = t2.Columns[i-len(t1.Columns)].DataType
 		}
 	}
-	columns := make([][]interface{}, len(t1.columns)+len(t2.columns), len(t1.columns)+len(t2.columns))
+	columns := make([][]interface{}, len(t1.Columns)+len(t2.Columns), len(t1.Columns)+len(t2.Columns))
 	f := func(startInd1, startInd2, endInd1, endInd2 int, wg *sync.WaitGroup, mutex *sync.Mutex) {
 		defer wg.Done()
 		for row1 := startInd1; row1 < endInd1; row1++ {
 			for row2 := startInd2; row2 < endInd2; row2++ {
 				if doesFitCombRow(t1, t2, tree, row1, row2) {
 					mutex.Lock()
-					for i := 0; i < len(t1.columns)+len(t2.columns); i++ {
-						if i < len(t1.columns) {
-							columns[i] = append(columns[i], t1.columns[i].data[row1])
+					for i := 0; i < len(t1.Columns)+len(t2.Columns); i++ {
+						if i < len(t1.Columns) {
+							columns[i] = append(columns[i], t1.Columns[i].Data[row1])
 						} else {
-							columns[i] = append(columns[i], t2.columns[i-len(t1.columns)].data[row2])
+							columns[i] = append(columns[i], t2.Columns[i-len(t1.Columns)].Data[row2])
 						}
 					}
 					mutex.Unlock()
@@ -297,21 +297,21 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 	}
 	wg := sync.WaitGroup{}
 	mutex := sync.Mutex{}
-	if len(t1.columns[0].data)*len(t2.columns[0].data) <= MaxGoroutinesPerProc {
-		wg.Add(len(t1.columns[0].data) * len(t2.columns[0].data))
-		for i := 0; i < len(t1.columns[0].data); i++ {
-			for j := 0; j < len(t2.columns[0].data); j++ {
+	if len(t1.Columns[0].Data)*len(t2.Columns[0].Data) <= MaxGoroutines {
+		wg.Add(len(t1.Columns[0].Data) * len(t2.Columns[0].Data))
+		for i := 0; i < len(t1.Columns[0].Data); i++ {
+			for j := 0; j < len(t2.Columns[0].Data); j++ {
 				go f(i, j, i+1, j+1, &wg, &mutex)
 			}
 		}
 	} else {
-		nSplit := int(math.Sqrt(float64(MaxGoroutinesPerProc)))
-		if len(t1.columns[0].data) < nSplit {
-			nSplit = MaxGoroutinesPerProc / len(t1.columns[0].data) //на сколько нужно сплитануть вторую колонку
-			wg.Add(nSplit * len(t1.columns[0].data))
-			resExtr := len(t2.columns[0].data) % nSplit //сколько останется при сплите второй колонки на nSplit
-			incr := len(t2.columns[0].data) / nSplit    //По сколько колонок нужно сплитовать вторую колонку
-			for i := 0; i < len(t1.columns[0].data); i++ {
+		nSplit := int(math.Sqrt(float64(MaxGoroutines)))
+		if len(t1.Columns[0].Data) < nSplit {
+			nSplit = MaxGoroutines / len(t1.Columns[0].Data) //на сколько нужно сплитануть вторую колонку
+			wg.Add(nSplit * len(t1.Columns[0].Data))
+			resExtr := len(t2.Columns[0].Data) % nSplit //сколько останется при сплите второй колонки на nSplit
+			incr := len(t2.Columns[0].Data) / nSplit    //По сколько колонок нужно сплитовать вторую колонку
+			for i := 0; i < len(t1.Columns[0].Data); i++ {
 				add := 0
 				for j := 0; j < nSplit*incr; j += incr {
 					newadd := add
@@ -322,12 +322,12 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 					add = newadd
 				}
 			}
-		} else if len(t2.columns[0].data) < nSplit {
-			nSplit = MaxGoroutinesPerProc / len(t2.columns[0].data)
-			wg.Add(nSplit * len(t2.columns[0].data))
-			resExtr := len(t1.columns[0].data) % nSplit
-			incr := len(t1.columns[0].data) / nSplit
-			for i := 0; i < len(t2.columns[0].data); i++ {
+		} else if len(t2.Columns[0].Data) < nSplit {
+			nSplit = MaxGoroutines / len(t2.Columns[0].Data)
+			wg.Add(nSplit * len(t2.Columns[0].Data))
+			resExtr := len(t1.Columns[0].Data) % nSplit
+			incr := len(t1.Columns[0].Data) / nSplit
+			for i := 0; i < len(t2.Columns[0].Data); i++ {
 				add := 0
 				for j := 0; j < nSplit*incr; j += incr {
 					newadd := add
@@ -340,10 +340,10 @@ func ParallelJoin2(t1, t2 *Table, tree *parsers.BooleanTree) (*Table, error) {
 			}
 		} else {
 			wg.Add(nSplit * nSplit)
-			incr1 := len(t1.columns[0].data) / nSplit
-			incr2 := len(t2.columns[0].data) / nSplit
-			resExtr1 := len(t1.columns[0].data) % nSplit
-			resExtr2 := len(t2.columns[0].data) % nSplit
+			incr1 := len(t1.Columns[0].Data) / nSplit
+			incr2 := len(t2.Columns[0].Data) / nSplit
+			resExtr1 := len(t1.Columns[0].Data) % nSplit
+			resExtr2 := len(t2.Columns[0].Data) % nSplit
 			add1 := 0
 			for i := 0; i < nSplit*incr1; i += incr1 {
 				newadd1 := add1

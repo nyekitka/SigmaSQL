@@ -7,34 +7,34 @@ import (
 )
 
 type column struct {
-	data     []interface{}
-	dataType reflect.Type
-	name     string
+	Data     []interface{}
+	DataType reflect.Type
+	Name     string
 }
 
 type Table struct {
-	columns []column
+	Columns []column
 }
 
 func trustingCreateTable(columnsNames []string, columns ...[]interface{}) (result *Table, err error) {
 	result = &Table{}
-	result.columns = make([]column, len(columns), len(columns))
+	result.Columns = make([]column, len(columns), len(columns))
 	for i := 0; i < len(columns); i++ {
 		if len(columns[i]) == 0 {
 			return nil, errors.New("empty columns are given")
 		}
 		var current = columns[i][0]
-		result.columns[i] = column{
-			data:     columns[i],
-			name:     columnsNames[i],
-			dataType: reflect.TypeOf(current)}
+		result.Columns[i] = column{
+			Data:     columns[i],
+			Name:     columnsNames[i],
+			DataType: reflect.TypeOf(current)}
 	}
 	return result, nil
 }
 
 func CreateTable(columnsNames []string, columns ...[]interface{}) (result *Table, err error) {
 	result = &Table{}
-	result.columns = make([]column, len(columns), len(columns))
+	result.Columns = make([]column, len(columns), len(columns))
 	for i := 0; i < len(columns); i += 1 {
 		if len(columns[i]) == 0 {
 			return nil, errors.New("empty columns are given")
@@ -43,10 +43,10 @@ func CreateTable(columnsNames []string, columns ...[]interface{}) (result *Table
 		if len(columns[i]) != len(columns[0]) {
 			return nil, errors.New("columns are not the same size")
 		}
-		result.columns[i] = column{
-			name:     columnsNames[i],
-			dataType: reflect.TypeOf(current),
-			data:     make([]interface{}, 0, len(columns[0]))}
+		result.Columns[i] = column{
+			Name:     columnsNames[i],
+			DataType: reflect.TypeOf(current),
+			Data:     make([]interface{}, 0, len(columns[0]))}
 	}
 	uniqueRows := make(map[string]bool)
 	for i := 0; i < len(columns[0]); i++ {
@@ -65,7 +65,7 @@ func CreateTable(columnsNames []string, columns ...[]interface{}) (result *Table
 		_, ok := uniqueRows[row]
 		if !ok {
 			for j := 0; j < len(columns); j++ {
-				result.columns[j].data = append(result.columns[j].data, columns[j][i])
+				result.Columns[j].Data = append(result.Columns[j].Data, columns[j][i])
 			}
 			uniqueRows[row] = true
 		}
@@ -78,12 +78,12 @@ func CreateEmptyTable(names []string, types []reflect.Type) (*Table, error) {
 		return nil, errors.New("length of names isn't equal to length of types")
 	}
 	result := &Table{}
-	result.columns = make([]column, len(names), len(names))
+	result.Columns = make([]column, len(names), len(names))
 	for i := 0; i < len(names); i++ {
-		result.columns[i] = column{
-			data:     make([]interface{}, 0, 10),
-			dataType: types[i],
-			name:     names[i],
+		result.Columns[i] = column{
+			Data:     make([]interface{}, 0, 10),
+			DataType: types[i],
+			Name:     names[i],
 		}
 	}
 	return result, nil
